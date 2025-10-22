@@ -113,18 +113,18 @@ export const assignDashboardValidation = [
 ];
 
 export const createCommentValidation = [
-  param('id')
-    .isMongoId()
-    .withMessage('Valid dashboard ID is required'),
-  body('message')
-    .trim()
-    .notEmpty()
-    .isLength({ min: 1, max: 2000 })
-    .withMessage('Message must be between 1 and 2000 characters'),
-  body('parentId')
-    .optional()
-    .isMongoId()
-    .withMessage('Valid parent comment ID required')
+    param('id')
+        .isMongoId()
+        .withMessage('Valid dashboard ID is required'),
+    body('message')
+        .trim()
+        .notEmpty()
+        .isLength({ min: 1, max: 2000 })
+        .withMessage('Message must be between 1 and 2000 characters'),
+    body('parentId')
+        .optional({ nullable: true }) // <-- CRITICAL FIX: Allows the field to be null
+        .isMongoId() 
+        .withMessage('Valid parent comment ID required')
 ];
 
 export const updateCommentValidation = [

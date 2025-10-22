@@ -210,14 +210,24 @@ export class DashboardService {
       throw createApiError('Access denied', 403);
     }
 
+    // const comments = await Comment.find({ dashboard: dashboardId, parent: null })
+    //   .populate('user', 'name email')
+    //   .populate({
+    //     path: 'replies',
+    //     populate: { path: 'user', select: 'name email' }
+    //   })
+    //   .sort({ createdAt: -1 });
+// dashboard.service.js (inside getComments)
+
     const comments = await Comment.find({ dashboard: dashboardId, parent: null })
       .populate('user', 'name email')
       .populate({
-        path: 'replies',
+        path: 'replies', // ✅ This is now a valid virtual field!
         populate: { path: 'user', select: 'name email' }
       })
       .sort({ createdAt: -1 });
 
+    
     return comments;
   }
 
