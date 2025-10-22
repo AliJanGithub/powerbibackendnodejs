@@ -1,3 +1,4 @@
+import { User } from '../models/user.model.js';
 import { UserService } from '../services/user.service.js';
 import { asyncHandler, sanitizeUser } from '../utils/helpers.js';
 
@@ -9,6 +10,38 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     data: { users }
   });
 });
+
+
+
+
+export const updateUserName = asyncHandler(async (req, res) => {
+  // ID of the user to update
+  const { name } = req.body; 
+  const userId=req.user._id;
+  // New name from request body
+
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'Name is required' });
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  user.name = name;  // Update only the name
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Name updated successfully',
+    data: { id: user._id, name: user.name }
+  });
+});
+
+
+
+
 
 export const getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;

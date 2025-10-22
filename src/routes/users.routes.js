@@ -11,6 +11,7 @@ router.use(authenticate);
 router.use(requireAdminOrSuperAdmin);
 
 router.get('/', usersController.getAllUsers);
+router.put('/update/name', validate,usersController.updateUserName);
 
 router.get('/:id', mongoIdValidation, validate, usersController.getUserById);
 
