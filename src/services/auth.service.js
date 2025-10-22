@@ -7,7 +7,16 @@ import { config } from '../configs/secrets.js';
 
 export class AuthService {
   static async login(email, password) {
-    const user = await User.findOne({ email });
+   const user = await User.findOne({ email })
+  .populate({
+    path: 'company',
+    select: 'name createdBy', // include createdBy so we can populate it next
+    populate: {
+      path: 'createdBy',
+      select: 'name email role' // fields from User model
+    }
+  });
+
 
     if (!user || !user.passwordHash) {
       throw createApiError('Invalid credentials', 401);
