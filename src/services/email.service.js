@@ -84,7 +84,7 @@ export class EmailService {
       return;
     }
 
-    const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = `${config.frontendUrl}/forgot-password?token=${resetToken}`;
 
     const mailOptions = {
       from: config.email.from,

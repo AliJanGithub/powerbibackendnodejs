@@ -44,4 +44,10 @@ router.post(
   authController.changeName
 );
 
+router.post('/forgot-password', authController.forgotPassword);
+
+// 2. Route to submit the new password using the token (Step 2)
+// The token is typically passed in the URL, hence the :token parameter.
+router.post('/reset-password/:token', authController.resetPassword);
+
 export default router;

@@ -43,6 +43,84 @@ export class AuthService {
 }
 
 
+
+
+
+
+
+
+ static async forgotPasswordRequest(email) {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            // Important: Return a success message even if the user is not found,
+            // to prevent email enumeration attacks.
+            return { message: 'If an account with that email exists, a password reset link has been sent.' };
+        }
+
+        // 1. Generate a secure, short-lived token
+        const resetToken = generateToken();
+        // const resetTokenHash = hashToken(resetToken);
+        // Token expires in 1 hour (config.resetTokenExpiry is in hours, assuming 1)
+        const resetExpiresAt = new Date(Date.now() + config.resetTokenExpiry * 60 * 60 * 1000);
+
+        // 2. Save the token hash and expiry to the user document
+        user.passwordResetTokenHash = resetToken;
+        user.passwordResetExpiresAt = resetExpiresAt;
+        await user.save({ validateBeforeSave: false }); // Bypass validation like 'required password'
+
+        // 3. Send the email with the reset link containing the raw token
+        await emailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+
+        return { message: 'Password reset link sent successfully.' };
+    }
+
+  
+    static async resetPassword(token, newPassword) {
+        // const tokenHash = hashToken(token);
+        // console.log("tokennnn hash ",tokenHash)
+
+        // 1. Find user by the hashed token and check expiry
+        const user = await User.findOne({
+            passwordResetTokenHash: token
+        });
+     console.log("user",user)
+        if (!user) {
+            throw createApiError('Invalid or expired password reset token.', 400);
+        }
+
+        // 2. Update the password
+        await user.hashPassword(newPassword);
+
+        // 3. Clear the reset token fields and save
+        user.passwordResetTokenHash = undefined;
+        user.passwordResetExpiresAt = undefined;
+
+        // If the user was invited but never set a password, this completes their setup
+        if (!user.isActive) {
+            user.isActive = true;
+            user.inviteTokenHash = undefined;
+            user.inviteExpiresAt = undefined;
+        }
+
+        await user.save();
+
+        // 4. Optionally: Log the user in and return tokens, or just return success
+        // We'll return tokens for a smooth transition to the authenticated state.
+        const { accessToken, refreshToken } = JWTService.generateTokenPair(user._id, user.role);
+        await JWTService.storeRefreshToken(user._id, refreshToken);
+
+        return { user, accessToken, refreshToken };
+    }
+
+
+
+
+
+
+
+
+
 // ✅ Change Password
 static async changePassword(userId, currentPassword, newPassword) {
   const user = await User.findById(userId);
