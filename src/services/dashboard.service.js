@@ -2,26 +2,96 @@ import { Dashboard } from '../models/dashboard.model.js';
 import { User } from '../models/user.model.js';
 import { Comment } from '../models/comment.model.js';
 import { createApiError } from '../utils/helpers.js';
+import { Notification } from '../models/notification.model.js';
 
 export class DashboardService {
-  static async createDashboard(creatorId, dashboardData) {
-    const creator = await User.findById(creatorId);
+  // static async createDashboard(creatorId, dashboardData) {
+  //   const creator = await User.findById(creatorId);
 
-    if (creator.role !== 'ADMIN') {
-      throw createApiError('Only admins can create dashboards', 403);
-    }
+  //   if (creator.role !== 'ADMIN') {
+  //     throw createApiError('Only admins can create dashboards', 403);
+  //   }
 
-    const dashboard = await Dashboard.create({
-      ...dashboardData,
-      createdBy: creatorId,
-      company: creator.company
+  //   const dashboard = await Dashboard.create({
+  //     ...dashboardData,
+  //     createdBy: creatorId,
+  //     company: creator.company
+  //   });
+
+  //   await dashboard.populate('createdBy', 'name email');
+  //   await dashboard.populate('company', 'name');
+
+  //   return dashboard;
+  // }
+
+static async createDashboard(adminId, dashboardData) {
+  const admin = await User.findById(adminId);
+
+  if (!admin || admin.role !== 'ADMIN') {
+    throw createApiError('Only admins can create dashboards', 403);
+  }
+
+  const { title, embedUrl, description, department, tags } = dashboardData;
+
+  if (!department || !['FINANCE', 'SALES', 'MARKETING', 'GENERAL', 'OTHER', 'HR'].includes(department)) {
+    throw createApiError('Invalid or missing department', 400);
+  }
+
+  const dashboard = await Dashboard.create({
+    title,
+    embedUrl,
+    description,
+    department,
+    tags,
+    createdBy: admin._id,
+    company: admin.company
+  });
+
+  return dashboard;
+}
+
+
+
+static async assignByDepartment(department, userIds, requestingUser) {
+  if (requestingUser.role !== 'ADMIN') {
+    throw createApiError('Only admins can assign dashboards', 403);
+  }
+
+  const dashboards = await Dashboard.find({
+    company: requestingUser.company,
+    department
+  });
+
+  if (!dashboards.length) {
+    throw createApiError('No dashboards found for this department', 404);
+  }
+ for (const userId of userIds) {
+    const notification = await Notification.create({
+      recipient: userId,
+      sender: requestingUser._id,
+      type: 'NEW_DASHBOARD',
+      message: `A new dashboard from ${department} department has been assigned to you.`,
     });
 
-    await dashboard.populate('createdBy', 'name email');
-    await dashboard.populate('company', 'name');
-
-    return dashboard;
+    // Emit socket notification
+    const notificationSocket = req.app.get('notificationSocket');
+    if (notificationSocket) {
+      notificationSocket.sendToUser(userId, notification);
+    }
   }
+  const dashboardIds = dashboards.map(d => d._id);
+
+  await Dashboard.updateMany(
+    { _id: { $in: dashboardIds } },
+    { $addToSet: { accessUsers: { $each: userIds } } }
+  );
+
+  return dashboards;
+}
+
+
+
+
 
   static async getDashboards(requestingUser) {
     let query = {};
@@ -231,7 +301,7 @@ export class DashboardService {
     return comments;
   }
 
-  static async createComment(dashboardId, userId, message, parentId = null) {
+  static async createComment(dashboardId, userId, message, parentId = null,app) {
     const dashboard = await Dashboard.findById(dashboardId);
     const user = await User.findById(userId);
 
@@ -259,7 +329,40 @@ export class DashboardService {
       parent: parentId
     });
 
+
+
+
+
     await comment.populate('user', 'name email');
+
+ const allRecipients = [
+    dashboard.createdBy.toString(), // Convert to string early
+    ...dashboard.accessUsers.map(u => u.toString()) // Convert all to strings
+];
+const uniqueRecipients = new Set(allRecipients);
+console.log("USERS TO CHECK:", Array.from(uniqueRecipients)); // Should show Admin and User IDs
+const recipientsToSend = Array.from(uniqueRecipients).filter(
+    (recipientId) => recipientId !== userId.toString()
+)
+console.log("RECIPIENTS TO SEND:", recipientsToSend); // Should show only the other user's ID
+// send notifications
+ const notificationSocket = app.get('notificationSocket');
+for (const recipient of recipientsToSend) {
+  const notification = await Notification.create({
+    recipient,
+    sender: userId,
+    type: 'COMMENT',
+    dashboard: dashboardId,
+    message: `${user.name} commented on the ${dashboard.title} dashboard.`
+  });
+
+ 
+  if (notificationSocket) {
+    
+    notificationSocket.sendToUser(recipient, notification);
+  }
+}
+
 
     return comment;
   }

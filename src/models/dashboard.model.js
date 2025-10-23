@@ -24,6 +24,11 @@ const DashboardSchema = new mongoose.Schema({
     ref: 'Company',
     required: true
   },
+  department: {
+    type: String,
+    enum: ['FINANCE', 'SALES', 'MARKETING', 'GENERAL', 'OTHER', 'HR'],
+    required: true}
+    ,
   accessUsers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -37,6 +42,8 @@ const DashboardSchema = new mongoose.Schema({
 });
 
 DashboardSchema.index({ createdBy: 1 });
+DashboardSchema.index({ department: 1 });
+
 DashboardSchema.index({ company: 1 });
 DashboardSchema.index({ accessUsers: 1 });
 DashboardSchema.index({ tags: 1 });

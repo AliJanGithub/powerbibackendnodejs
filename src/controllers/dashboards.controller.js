@@ -1,6 +1,16 @@
 import { DashboardService } from '../services/dashboard.service.js';
 import { asyncHandler } from '../utils/helpers.js';
 
+// export const createDashboard = asyncHandler(async (req, res) => {
+//   const dashboard = await DashboardService.createDashboard(req.user._id, req.body);
+
+//   res.status(201).json({
+//     success: true,
+//     message: 'Dashboard created successfully',
+//     data: { dashboard }
+//   });
+// });
+
 export const createDashboard = asyncHandler(async (req, res) => {
   const dashboard = await DashboardService.createDashboard(req.user._id, req.body);
 
@@ -10,6 +20,8 @@ export const createDashboard = asyncHandler(async (req, res) => {
     data: { dashboard }
   });
 });
+
+
 
 export const getDashboards = asyncHandler(async (req, res) => {
   const dashboards = await DashboardService.getDashboards(req.user);
@@ -77,5 +89,17 @@ export const unassignDashboard = asyncHandler(async (req, res) => {
     success: true,
     message: 'Users unassigned successfully',
     data: { dashboard }
+  });
+});
+
+export const assignByDepartment = asyncHandler(async (req, res) => {
+  const { department, userIds } = req.body;
+
+  const dashboards = await DashboardService.assignByDepartment(department, userIds, req.user);
+
+  res.json({
+    success: true,
+    message: `Users assigned to ${department} dashboards`,
+    data: { dashboards }
   });
 });

@@ -6,6 +6,10 @@ import { logger } from './configs/logger.js';
 import { emailService } from './services/email.service.js';
 import { createApp } from './app.js';
 import { setupCommentSocket } from './sockets/comments.socket.js';
+// server.js
+import { setupNotificationSocket } from './sockets/notifications.socket.js';
+
+
 
 const startServer = async () => {
   try {
@@ -28,6 +32,10 @@ const startServer = async () => {
     const commentSocketHandlers = setupCommentSocket(io);
 
     app.set('commentSocket', commentSocketHandlers);
+    // after: const commentSocketHandlers = setupCommentSocket(io);
+const notificationSocketHandlers = setupNotificationSocket(io);
+
+app.set('notificationSocket', notificationSocketHandlers);
 
     httpServer.listen(config.port, () => {
       logger.info(`Server running in ${config.env} mode on port ${config.port}`);

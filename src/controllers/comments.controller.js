@@ -15,8 +15,8 @@ export const getComments = asyncHandler(async (req, res) => {
 export const createComment = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { message, parentId } = req.body;
-
-  const comment = await DashboardService.createComment(id, req.user._id, message, parentId);
+    // const notificationSocket = req.app.get('notificationSocket');
+  const comment = await DashboardService.createComment(id, req.user._id, message, parentId,req.app);
 
   res.status(201).json({
     success: true,

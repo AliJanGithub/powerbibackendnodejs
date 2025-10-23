@@ -21,6 +21,8 @@ router.post(
   validate,
   dashboardsController.createDashboard
 );
+router.post('/assign-by-department',requireAdminOrSuperAdmin, validate, dashboardsController.assignByDepartment);
+
 
 router.get('/', dashboardsController.getDashboards);
 
